@@ -3,6 +3,8 @@
 
 package v1alpha1
 
+import "time"
+
 // ServerSelector specifies matching criteria for labels on Server.
 // This is used to claim specific Server types for a Machine
 type ServerSelector struct {
@@ -10,3 +12,8 @@ type ServerSelector struct {
 	// +optional
 	MatchLabels map[string]string `json:"matchLabels,omitempty"`
 }
+
+const (
+	PollInterval      = 5 * time.Second
+	IgnitionSecretKey = "ignition"
+)

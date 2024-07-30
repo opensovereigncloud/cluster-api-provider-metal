@@ -2,6 +2,7 @@
 
 envsubst_cmd = "./bin/envsubst"
 kubectl_cmd = "./bin/kubectl"
+kustomize_cmd = "./bin/kustomize"
 helm_cmd = "./bin/helm"
 tools_bin = "./bin"
 
@@ -18,6 +19,8 @@ settings = {
     "preload_images_for_kind": True,
     "kind_cluster_name": "capm",
     "capi_version": "v1.6.4",
+    "metal_version": "17e10339810f16b3e0261663620d36700b479710",
+    "metal_image": "ghcr.io/ironcore-dev/metal-operator-controller-manager:sha-17e1033",
     "cert_manager_version": "v1.14.4",
     "kubernetes_version": "v1.29.4",
 }
@@ -54,6 +57,32 @@ def deploy_capi():
             kb_extra_args = extra_args.get("kubeadm-bootstrap")
             if kb_extra_args:
                 patch_args_with_extra_args("capi-kubeadm-bootstrap-system", "capi-kubeadm-bootstrap-controller-manager", kb_extra_args)
+
+# deploy metal-operator
+def deploy_metal():
+    version = settings.get("metal_version")
+    image = settings.get("metal_image")
+    metal_uri = "https://github.com/ironcore-dev/metal-operator//config/default?ref={}".format(version)
+    cmd = "{} build {} | {} | {} apply -f -".format(kustomize_cmd, metal_uri, envsubst_cmd, kubectl_cmd)
+    local(cmd, quiet=True)
+
+    patch_image("metal-operator-system", "metal-operator-controller-manager", image)
+
+def patch_image(namespace, name, image):
+    patch = [{
+        "op": "replace",
+        "path": "/spec/template/spec/containers/0/image",
+        "value": image,
+    }]
+    local("kubectl patch deployment {} -n {} --type json -p='{}'".format(name, namespace, str(encode_json(patch)).replace("\n", "")))
+
+def patch_metal_volume(namespace, name):
+    patch = [{
+        "op": "replace",
+        "path": "/spec/template/spec/containers/0/image",
+        "value": "foo",
+    }]
+    local("kubectl patch deployment {} -n {} --type json -p='{}'".format(name, namespace, str(encode_json(patch)).replace("\n", "")))
 
 def patch_args_with_extra_args(namespace, name, extra_args):
     args_str = str(local('kubectl get deployments {} -n {} -o jsonpath={{.spec.template.spec.containers[1].args}}'.format(name, namespace)))
@@ -199,9 +228,12 @@ deploy_cert_manager()
 
 deploy_capi()
 
+deploy_metal()
+
 capm()
 
 waitforsystem()
+
 
 k8s_yaml('./templates/test/cluster_v1beta1_cluster.yaml')
 k8s_resource(

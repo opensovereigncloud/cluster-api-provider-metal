@@ -5,6 +5,7 @@ package controller
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -50,6 +51,7 @@ const (
 	DefaultIgnitionSecretKeyName  = "ignition"
 	metaDataFile                  = "/var/lib/metal-cloud-config/metadata"
 	fileMode                      = 0644
+	fileSystem                    = "root"
 	bootstrapDataKey              = "value"
 	metalHostnamePlaceholder      = "%24%24%7BMETAL_HOSTNAME%7D"
 )
@@ -309,8 +311,11 @@ func (r *IroncoreMetalMachineReconciler) createIgnition(ctx context.Context, log
 				"files": []any{map[string]any{
 					"path": metaDataFile,
 					"mode": fileMode,
+					// TODO: remove fileSystem after Ignition 3.x is supported
+					"filesystem": fileSystem,
 					"contents": map[string]any{
-						"inline": string(metaData),
+						"compression": "",
+						"source":      "data:;base64," + base64.StdEncoding.EncodeToString(metaData),
 					},
 				}},
 			},

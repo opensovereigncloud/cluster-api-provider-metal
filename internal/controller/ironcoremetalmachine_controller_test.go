@@ -5,6 +5,7 @@ package controller
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -185,7 +186,10 @@ var _ = Describe("IroncoreMetalMachine Controller", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 
-				expectIgnition(`{"name":"metal-machine","storage":{"files":[{"contents":{"inline":"{\"foo\":\"bar\"}"},"mode":420,"path":"/var/lib/metal-cloud-config/metadata"}]}}`)
+				ign := base64.StdEncoding.EncodeToString([]byte(`{"foo":"bar"}`))
+				expectIgnition(
+					`{"name":"metal-machine","storage":{"files":[{"contents":{"compression":"","source":"data:;base64,` +
+						ign + `"},"filesystem":"root","mode":420,"path":"/var/lib/metal-cloud-config/metadata"}]}}`)
 			})
 		})
 
@@ -247,7 +251,10 @@ var _ = Describe("IroncoreMetalMachine Controller", func() {
 				})
 				Expect(err).NotTo(HaveOccurred())
 
-				expectIgnition(`{"name":"metal-machine","storage":{"files":[{"contents":{"inline":"{\"meta-key\":{\"gateway\":\"10.11.12.1\",\"ip\":\"10.11.12.13\",\"prefix\":24}}"},"mode":420,"path":"/var/lib/metal-cloud-config/metadata"}]}}`)
+				ign := base64.StdEncoding.EncodeToString([]byte(`{"meta-key":{"gateway":"10.11.12.1","ip":"10.11.12.13","prefix":24}}`))
+				expectIgnition(
+					`{"name":"metal-machine","storage":{"files":[{"contents":{"compression":"","source":"data:;base64,` +
+						ign + `"},"filesystem":"root","mode":420,"path":"/var/lib/metal-cloud-config/metadata"}]}}`)
 			})
 
 			When("the metadata is present in the metal machine", func() {
@@ -263,7 +270,10 @@ var _ = Describe("IroncoreMetalMachine Controller", func() {
 					})
 					Expect(err).NotTo(HaveOccurred())
 
-					expectIgnition(`{"name":"metal-machine","storage":{"files":[{"contents":{"inline":"{\"foo\":\"bar\",\"meta-key\":{\"gateway\":\"10.11.12.1\",\"ip\":\"10.11.12.13\",\"prefix\":24}}"},"mode":420,"path":"/var/lib/metal-cloud-config/metadata"}]}}`)
+					ign := base64.StdEncoding.EncodeToString([]byte(`{"foo":"bar","meta-key":{"gateway":"10.11.12.1","ip":"10.11.12.13","prefix":24}}`))
+					expectIgnition(
+						`{"name":"metal-machine","storage":{"files":[{"contents":{"compression":"","source":"data:;base64,` +
+							ign + `"},"filesystem":"root","mode":420,"path":"/var/lib/metal-cloud-config/metadata"}]}}`)
 				})
 			})
 		})

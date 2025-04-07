@@ -107,14 +107,14 @@ func (m *MachineScope) HasFailed() bool {
 }
 
 // PatchObject persists the Machine configuration and status.
-func (s *MachineScope) PatchObject() error {
+func (m *MachineScope) PatchObject() error {
 	// always update the readyCondition.
 	// TBD readyCondition
 
-	return s.patchHelper.Patch(context.TODO(), s.IroncoreMetalMachine)
+	return m.patchHelper.Patch(context.TODO(), m.IroncoreMetalMachine)
 }
 
 // Close closes the current scope persisting the Machine configuration and status.
-func (s *MachineScope) Close() error {
-	return s.PatchObject()
+func (m *MachineScope) Close() error {
+	return m.PatchObject()
 }

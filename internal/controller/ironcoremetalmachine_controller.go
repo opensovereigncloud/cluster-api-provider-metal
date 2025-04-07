@@ -112,7 +112,7 @@ func (r *IroncoreMetalMachineReconciler) Reconcile(ctx context.Context, req ctrl
 	}
 
 	metalCluster := &infrav1alpha1.IroncoreMetalCluster{}
-	if err := r.Client.Get(ctx, metalClusterName, metalCluster); err != nil {
+	if err := r.Get(ctx, metalClusterName, metalCluster); err != nil {
 		if apierrors.IsNotFound(err) || !metalCluster.Status.Ready {
 			logger.Info("IroncoreMetalCluster is not available yet")
 			return ctrl.Result{}, nil
@@ -161,7 +161,7 @@ func (r *IroncoreMetalMachineReconciler) Reconcile(ctx context.Context, req ctrl
 	}
 
 	// Handle deleted machines
-	if !metalMachine.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !metalMachine.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope)
 	}
 
@@ -181,21 +181,21 @@ func (r *IroncoreMetalMachineReconciler) SetupWithManager(mgr ctrl.Manager) erro
 }
 
 func (r *IroncoreMetalMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope) (ctrl.Result, error) {
-	machineScope.Logger.Info("Deleting IroncoreMetalMachine")
+	machineScope.Info("Deleting IroncoreMetalMachine")
 
 	// insert ServerClaim deletion logic here
 
 	ipList := &capiv1beta1.IPAddressClaimList{}
-	if err := r.Client.List(ctx, ipList, client.InNamespace(machineScope.IroncoreMetalMachine.Namespace)); meta.IsNoMatchError(err) {
-		machineScope.Logger.Info("Kind not found, assuming IP objects for that kind is absent", "kind", ipList.GetObjectKind().GroupVersionKind().Kind)
+	if err := r.List(ctx, ipList, client.InNamespace(machineScope.IroncoreMetalMachine.Namespace)); meta.IsNoMatchError(err) {
+		machineScope.Info("Kind not found, assuming IP objects for that kind is absent", "kind", ipList.GetObjectKind().GroupVersionKind().Kind)
 		ipList = &capiv1beta1.IPAddressClaimList{}
 	} else if err != nil {
 		return ctrl.Result{}, fmt.Errorf("error listing ip resources: %s", err.Error())
 	}
 	for _, ip := range ipList.Items {
 		if strings.HasPrefix(ip.Name, machineScope.IroncoreMetalMachine.Name) {
-			if err := r.Client.Delete(ctx, &ip); meta.IsNoMatchError(err) {
-				machineScope.Logger.Info("Kind not found, assuming IP objects for that kind is absent", "kind", ipList.GetObjectKind().GroupVersionKind().Kind, "object", ip.Name)
+			if err := r.Delete(ctx, &ip); meta.IsNoMatchError(err) {
+				machineScope.Info("Kind not found, assuming IP objects for that kind is absent", "kind", ipList.GetObjectKind().GroupVersionKind().Kind, "object", ip.Name)
 			} else if client.IgnoreNotFound(err) != nil {
 				// Unknown leads to short retry in machine controller
 				return ctrl.Result{}, fmt.Errorf("error deleting ip resource: %s", err.Error())
@@ -206,7 +206,7 @@ func (r *IroncoreMetalMachineReconciler) reconcileDelete(ctx context.Context, ma
 	if modified, err := clientutils.PatchEnsureNoFinalizer(ctx, r.Client, machineScope.IroncoreMetalMachine, IroncoreMetalMachineFinalizer); !apierrors.IsNotFound(err) || modified {
 		return ctrl.Result{}, err
 	}
-	machineScope.Logger.Info("Ensured that the finalizer has been removed")
+	machineScope.Info("Ensured that the finalizer has been removed")
 
 	return reconcile.Result{RequeueAfter: infrav1alpha1.DefaultReconcilerRequeue}, nil
 }
@@ -236,7 +236,7 @@ func (r *IroncoreMetalMachineReconciler) reconcileNormal(ctx context.Context, ma
 	if modified, err := clientutils.PatchEnsureFinalizer(ctx, r.Client, machineScope.IroncoreMetalMachine, IroncoreMetalMachineFinalizer); err != nil || modified {
 		return ctrl.Result{}, err
 	}
-	machineScope.Logger.Info("Ensured finalizer has been added")
+	machineScope.Info("Ensured finalizer has been added")
 
 	// Fetch the bootstrap data secret.
 	bootstrapSecret := &corev1.Secret{}
@@ -244,7 +244,7 @@ func (r *IroncoreMetalMachineReconciler) reconcileNormal(ctx context.Context, ma
 		Namespace: machineScope.Machine.Namespace,
 		Name:      *machineScope.Machine.Spec.Bootstrap.DataSecretName,
 	}
-	if err := r.Client.Get(ctx, secretName, bootstrapSecret); err != nil {
+	if err := r.Get(ctx, secretName, bootstrapSecret); err != nil {
 		machineScope.Error(err, "failed to get bootstrap data secret")
 		return ctrl.Result{}, err
 	}
@@ -285,7 +285,7 @@ func (r *IroncoreMetalMachineReconciler) reconcileNormal(ctx context.Context, ma
 	}
 
 	machineScope.SetReady()
-	machineScope.Logger.Info("IroncoreMetalMachine is ready")
+	machineScope.Info("IroncoreMetalMachine is ready")
 
 	return reconcile.Result{}, nil
 }
@@ -341,7 +341,7 @@ func (r *IroncoreMetalMachineReconciler) createMetaData(ctx context.Context, log
 
 		ipAddrClaimKey := client.ObjectKey{Namespace: ironcoremetalmachine.Namespace, Name: ipAddrClaimName}
 		ipClaim := &capiv1beta1.IPAddressClaim{}
-		if err := r.Client.Get(ctx, ipAddrClaimKey, ipClaim); err != nil && !apierrors.IsNotFound(err) {
+		if err := r.Get(ctx, ipAddrClaimKey, ipClaim); err != nil && !apierrors.IsNotFound(err) {
 			return nil, err
 
 		} else if err == nil {
@@ -369,7 +369,7 @@ func (r *IroncoreMetalMachineReconciler) createMetaData(ctx context.Context, log
 					},
 				},
 			}
-			if err = r.Client.Create(ctx, ipClaim); err != nil {
+			if err = r.Create(ctx, ipClaim); err != nil {
 				return nil, fmt.Errorf("error creating IP: %w", err)
 			}
 
@@ -380,7 +380,7 @@ func (r *IroncoreMetalMachineReconciler) createMetaData(ctx context.Context, log
 				time.Millisecond*340,
 				true,
 				func(ctx context.Context) (bool, error) {
-					if err = r.Client.Get(ctx, ipAddrClaimKey, ipClaim); err != nil && !apierrors.IsNotFound(err) {
+					if err = r.Get(ctx, ipAddrClaimKey, ipClaim); err != nil && !apierrors.IsNotFound(err) {
 						return false, err
 					}
 					return ipClaim.Status.AddressRef.Name != "", nil
@@ -392,7 +392,7 @@ func (r *IroncoreMetalMachineReconciler) createMetaData(ctx context.Context, log
 
 		ipAddrKey := client.ObjectKey{Namespace: ipClaim.Namespace, Name: ipClaim.Status.AddressRef.Name}
 		ipAddr := &capiv1beta1.IPAddress{}
-		if err := r.Client.Get(ctx, ipAddrKey, ipAddr); err != nil {
+		if err := r.Get(ctx, ipAddrKey, ipAddr); err != nil {
 			return nil, err
 		}
 		metaDataMap[networkRef.MetadataKey] = map[string]any{
@@ -471,7 +471,7 @@ func (r *IroncoreMetalMachineReconciler) patchIroncoreMetalMachineProviderID(ctx
 	patch := client.MergeFrom(ironcoremetalmachine.DeepCopy())
 	ironcoremetalmachine.Spec.ProviderID = &providerID
 
-	if err := r.Client.Patch(ctx, ironcoremetalmachine, patch); err != nil {
+	if err := r.Patch(ctx, ironcoremetalmachine, patch); err != nil {
 		log.Error(err, "failed to patch IroncoreMetalMachine with ProviderID")
 		return err
 	}

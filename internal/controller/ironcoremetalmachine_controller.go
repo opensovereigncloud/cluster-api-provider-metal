@@ -404,7 +404,7 @@ func (r *IroncoreMetalMachineReconciler) createMetaData(ctx context.Context, log
 		if err := controllerutil.SetOwnerReference(ironcoremetalmachine, ipAddr, r.Client.Scheme()); err != nil {
 			return nil, fmt.Errorf("failed to set OwnerReference: %w", err)
 		}
-		if err := r.Client.Patch(ctx, ipAddr, client.MergeFrom(ipAddrCopy)); err != nil {
+		if err := r.Patch(ctx, ipAddr, client.MergeFrom(ipAddrCopy)); err != nil {
 			return nil, fmt.Errorf("failed to patch IPAddress: %w", err)
 		}
 		metaDataMap[networkRef.MetadataKey] = map[string]any{

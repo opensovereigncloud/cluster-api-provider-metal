@@ -42,7 +42,7 @@ func (r *IroncoreMetalClusterReconciler) Reconcile(ctx context.Context, req ctrl
 	logger := log.FromContext(ctx)
 
 	metalCluster := &infrav1.IroncoreMetalCluster{}
-	if err := r.Client.Get(ctx, req.NamespacedName, metalCluster); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, metalCluster); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
 		}
@@ -127,7 +127,7 @@ func (r *IroncoreMetalClusterReconciler) reconcileDelete(ctx context.Context, cl
 
 //nolint:unparam
 func (r *IroncoreMetalClusterReconciler) reconcileNormal(_ context.Context, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
-	clusterScope.Logger.Info("Reconciling IroncoreMetalCluster")
+	clusterScope.Info("Reconciling IroncoreMetalCluster")
 
 	// If the IroncoreMetalCluster doesn't have our finalizer, add it.
 	ctrlutil.AddFinalizer(clusterScope.IroncoreMetalCluster, infrav1.ClusterFinalizer)

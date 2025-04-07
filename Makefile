@@ -181,7 +181,7 @@ HELM_VERSION ?= v3.15.3
 CONTROLLER_TOOLS_VERSION ?= v0.16.3
 ENVTEST_VERSION ?= latest
 ENVSUBST_VER := v1.2.0
-GOLANGCI_LINT_VERSION ?= v1.61.0
+GOLANGCI_LINT_VERSION ?= v2.0
 GEN_CRD_API_REFERENCE_DOCS_VERSION ?= v0.3.0
 
 # Directiries.
@@ -230,7 +230,7 @@ $(ENVSUBST): $(LOCALBIN)
 .PHONY: golangci-lint
 golangci-lint: $(GOLANGCI_LINT) ## Download golangci-lint locally if necessary.
 $(GOLANGCI_LINT): $(LOCALBIN)
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint,${GOLANGCI_LINT_VERSION})
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/v2/cmd/golangci-lint,${GOLANGCI_LINT_VERSION})
 
 .PHONY: gen-crd-api-reference-docs
 gen-crd-api-reference-docs: $(GEN_CRD_API_REFERENCE_DOCS) ## Download gen-crd-api-reference-docs locally if necessary.

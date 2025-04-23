@@ -508,10 +508,11 @@ func (r *IroncoreMetalMachineReconciler) patchIroncoreMetalMachineProviderID(ctx
 }
 
 func (r *IroncoreMetalMachineReconciler) setServerClaimOwnership(ctx context.Context, serverClaim *metalv1alpha1.ServerClaim, IPAddressClaims []*capiv1beta1.IPAddressClaim) error {
+	// wait for the server claim to be visible in a cache
 	err := wait.PollUntilContextTimeout(
 		ctx,
-		time.Millisecond*50,
-		time.Millisecond*340,
+		50*time.Millisecond,
+		340*time.Millisecond,
 		true,
 		func(ctx context.Context) (bool, error) {
 			if err := r.Get(ctx, client.ObjectKeyFromObject(serverClaim), serverClaim); err != nil {

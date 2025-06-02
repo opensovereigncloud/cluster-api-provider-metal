@@ -3,7 +3,7 @@ module github.com/ironcore-dev/cluster-api-provider-ironcore-metal
 go 1.24.1
 
 require (
-	github.com/go-logr/logr v1.4.2
+	github.com/go-logr/logr v1.4.3
 	github.com/imdario/mergo v0.3.16
 	github.com/ironcore-dev/controller-utils v0.9.9
 	github.com/ironcore-dev/metal-operator v0.0.0-20250403080209-3b2b37617afc
